@@ -6,7 +6,7 @@ A run-based roguelike mining game with a hardcore daily payment curve, fictional
 
 - **Next.js 14** (App Router) + TypeScript
 - **TailwindCSS** for UI
-- **Prisma** + SQLite for persistence
+- **Prisma** + PostgreSQL for persistence
 - **NextAuth** (credentials provider) for authentication
 - **Zustand** for client state management
 - **Server Actions** for data mutations
@@ -42,7 +42,12 @@ npm run db:seed
 
 3. Create a `.env` file in the root directory (if not already present):
 ```env
-DATABASE_URL="file:./dev.db"
+# For local development with PostgreSQL (e.g., using Docker):
+# DATABASE_URL="postgresql://user:password@localhost:5432/claimjumpers?schema=public"
+# Or use a service like Supabase, Railway, or Neon for local dev
+
+# For Vercel deployment, use Vercel Postgres or another PostgreSQL provider
+DATABASE_URL="your-postgresql-connection-string"
 NEXTAUTH_SECRET="your-secret-key-here" # Generate with: openssl rand -base64 32
 NEXTAUTH_URL="http://localhost:3000"
 ```
@@ -159,7 +164,7 @@ Tests cover:
 
 ## Database
 
-The game uses SQLite for MVP (local development). The schema includes:
+The game uses PostgreSQL for persistence (required for Vercel deployment). The schema includes:
 - Users, Sectors, Runs, DayStates
 - StashItems, Specimens, VaultSpecimens
 - VaultBalances, JournalSlots

@@ -5,13 +5,13 @@
   "scripts": {
     "dev": "next dev --webpack",
     "dev:turbo": "next dev --turbo",
-    "build": "next build --webpack",
+    "build": "prisma generate && prisma migrate deploy && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "postinstall": "npm run db:generate && node -e \"const fs=require('fs');const p='node_modules/.prisma/client/default.js';if(!fs.existsSync(p))fs.writeFileSync(p,'require(\\\"ts-node/register/transpile-only\\\");module.exports=require(\\\"./client.ts\\\");');\"",
+    "postinstall": "npm run db:generate",
     "test": "jest"
   },
   "prisma": {
