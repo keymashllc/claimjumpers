@@ -1,0 +1,214 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../node_modules/.prisma/client"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum MetalType {
+  SOL
+  AES
+  VIR
+  LUN
+  NOC
+  CRN
+}
+
+enum Biome {
+  Desert
+  Rift
+  Glacier
+}
+
+enum SpecimenForm {
+  Ore
+  Nugget
+  Coin
+  Bar
+}
+
+enum SpecimenGrade {
+  Low
+  High
+  Ultra
+}
+
+enum RelicType {
+  LoanVoucher
+  DamageShield
+  CreditBoost
+  SpecimenBoost
+  RepairDiscount
+  ExtraShift
+  LuckyVein
+  MarketInsight
+  VaultExpansion
+  TimeExtension
+}
+
+enum RunStatus {
+  Active
+  Won
+  Lost
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  sectorId  String
+  sector    Sector   @relation(fields: [sectorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  runs            Run[]
+  vaultSpecimens  VaultSpecimen[]
+  vaultBalances   VaultBalance?
+  journalSlots    JournalSlot[]
+  specimenListings SpecimenListing[]
+  ownedRelics     OwnedRelic[]
+}
+
+model Sector {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  users           User[]
+  marketPrices    MarketPriceSnapshot[]
+  specimenListings SpecimenListing[]
+}
+
+model Run {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  status    RunStatus @default(Active)
+  currentDay Int      @default(1)
+  credits   Int       @default(0)
+  hp        Int       @default(10)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  dayStates    DayState[]
+  stashItems   StashItem[]
+  specimens    Specimen[]
+  ownedRelics  OwnedRelic[]
+}
+
+model DayState {
+  id          String   @id @default(cuid())
+  runId       String
+  run         Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  day         Int
+  due         Int
+  paid        Boolean  @default(false)
+  shiftsUsed  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([runId, day])
+}
+
+model StashItem {
+  id          String   @id @default(cuid())
+  runId       String
+  run         Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  metalType   MetalType
+  units       Int
+  createdAt   DateTime @default(now())
+}
+
+model Specimen {
+  id          String         @id @default(cuid())
+  runId       String?
+  run         Run?           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  metalType   MetalType
+  form        SpecimenForm
+  grade       SpecimenGrade
+  biome       Biome
+  createdAt   DateTime       @default(now())
+}
+
+model VaultSpecimen {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metalType   MetalType
+  form        SpecimenForm
+  grade       SpecimenGrade
+  biome       Biome
+  depositedAt DateTime       @default(now())
+  originalSpecimenId String? // Reference to original Specimen if needed
+
+  journalSlots    JournalSlot[]
+  specimenListing SpecimenListing?
+}
+
+model VaultBalance {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credits     Int       @default(0)
+  solUnits    Int       @default(0)
+  aesUnits    Int       @default(0)
+  virUnits    Int       @default(0)
+  lunUnits    Int       @default(0)
+  nocUnits    Int       @default(0)
+  crnUnits    Int       @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+model JournalSlot {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pageType    String   // e.g., "metal-SOL", "biome-Desert", "form-Coin"
+  slotIndex   Int      // 0-5
+  vaultSpecimenId String?
+  vaultSpecimen VaultSpecimen? @relation(fields: [vaultSpecimenId], references: [id], onDelete: SetNull)
+  filledAt    DateTime?
+}
+
+model MarketPriceSnapshot {
+  id          String    @id @default(cuid())
+  sectorId    String
+  sector      Sector    @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+  metalType   MetalType
+  price       Float     // Base price
+  timestamp   DateTime  @default(now())
+
+  @@index([sectorId, metalType, timestamp])
+}
+
+model SpecimenListing {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sectorId    String
+  sector      Sector         @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+  vaultSpecimenId String     @unique
+  vaultSpecimen   VaultSpecimen @relation(fields: [vaultSpecimenId], references: [id], onDelete: Cascade)
+  price       Int            // Credits
+  listedAt    DateTime       @default(now())
+  soldAt      DateTime?
+  cancelledAt DateTime?
+}
+
+model OwnedRelic {
+  id          String    @id @default(cuid())
+  runId       String?
+  run         Run?      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relicType   RelicType
+  used        Boolean   @default(false)
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+}
