@@ -10,6 +10,7 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Try DATABASE_URL first, then fallback to POSTGRES_PRISMA_URL or POSTGRES_URL
+    url: process.env["DATABASE_URL"] || process.env["POSTGRES_PRISMA_URL"] || process.env["POSTGRES_URL"],
   },
 });
